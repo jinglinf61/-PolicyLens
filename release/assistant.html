@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>据时 PolicyLen</title>
+<link rel="stylesheet" href="/assistant.css">
+<script type="module" src="/app.mjs"></script>
+</head>
+<body>
+<header class="site"><div class="brand"><b>据</b><span>据时 <strong>PolicyLen</strong></span></div><button class="quiet" id="logout" type="button" hidden>退出登录</button></header>
+<main>
+<section id="welcome" class="welcome">
+  <div class="intro"><span>含弘杯 · 评委体验</span><h1>校园成长助手</h1><p>查竞赛通知、对比往年推免资料，接着上次的规划聊。</p></div>
+  <form id="login" class="card">
+    <h2>邀请登录</h2>
+    <label>邀请凭证<input name="invite" type="password" required maxlength="64" autocomplete="off"></label>
+    <button type="submit">进入助手</button>
+    <p class="muted">参赛体验请使用虚构学生档案。请勿输入真实姓名、学号、手机号或证件号码。</p>
+  </form>
+</section>
+<p id="status" role="status" aria-live="polite"></p>
+<section id="workspace" class="workspace" hidden>
+  <div class="chat">
+    <h1>校园成长助手</h1>
+    <p class="muted">政策问题可联网查官网，并查看资料库补充。</p>
+    <div class="examples" aria-label="示例问题">
+      <button type="button" class="quiet" data-example="帮我查西南大学最新奖学金通知">查奖学金</button>
+      <button type="button" class="quiet" data-example="帮我查蓝桥杯软件类报名通知">查蓝桥杯</button>
+      <button type="button" class="quiet" data-example="接着上次的保研规划，帮我安排下一步">继续保研规划</button>
+    </div>
+    <div id="conversation" aria-live="polite"></div>
+    <form id="composer" class="card">
+      <label>你的问题<textarea name="question" placeholder="例如，帮我查四川大学计算机学院最新推免通知" required maxlength="700" rows="3"></textarea></label>
+      <div class="actions"><label class="check"><input name="search" type="checkbox">联网查官网</label><label class="check" title="开启后，当前问题和所需背景会发送给云端模型。请勿输入可识别个人身份的信息。"><input name="model" type="checkbox">用模型整理回答</label><button type="submit">发送</button></div>
+      <p id="model-note" class="muted"></p>
+    </form>
+  </div>
+  <aside class="card privacy">
+    <h2>记忆与隐私</h2>
+    <form id="memory">
+      <label class="check"><input name="remember" type="checkbox">跨设备保存规划</label>
+      <label class="check"><input name="saveChat" type="checkbox">跨设备保存对话</label>
+      <fieldset id="profile">
+        <label>年级<select name="grade"><option value="">未填写</option><option>大一</option><option>大二</option><option>大三</option><option>大四</option></select></label>
+        <label>专业<select name="major"><option value="">未填写</option><option>软件工程</option><option>计算机科学与技术</option><option>人工智能</option><option>其他</option></select></label>
+        <label>目标院校<input name="target" maxlength="24" placeholder="例如，四川大学"></label>
+        <label>规划进度<select name="progress"><option value="">未设置</option><option>了解方向</option><option>查找院系与项目</option><option>准备申请材料</option><option>准备复试</option><option>复盘与调整</option></select></label>
+      </fieldset>
+      <div class="actions"><button type="submit">保存设置</button><button id="erase" class="quiet danger" type="button">清空记忆</button></div>
+      <p id="memory-status" class="muted" role="status"></p>
+    </form>
+    <details><summary>哪些信息会发送出去</summary><p>联网搜索只发学校、赛事、政策主题等公开关键词。开启模型后，脱敏问题、相关背景、近期问题和公开证据会发给模型服务。自由输入仍可能含有可识别信息，请使用虚构档案。</p><p id="expires"></p></details>
+  </aside>
+</section>
+</main>
+</body>
+</html>

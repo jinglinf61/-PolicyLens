@@ -1,0 +1,78 @@
+#tab-planner { color:#172e4b }
+#tab-planner [hidden] { display:none !important }
+.planner-head {
+  display:flex;justify-content:space-between;align-items:flex-start;gap:18px;
+  margin-bottom:12px;padding:28px 30px;border-radius:12px;background:#e9f0f7;border:1px solid #dce6f1
+}
+.planner-head h1 {font-size:38px;margin:0 0 8px}
+.planner-head p {margin:0;color:#365169;line-height:1.6}
+.planner-head .planner-kicker {font-size:12px;margin-bottom:8px;font-weight:700}
+.planner-head .button {flex-shrink:0}
+.planner-card,.planner-active {padding:24px;background:#fff;border:1px solid #d9e2ec;border-radius:12px}
+.planner-card h2,.planner-dialog h2 {font-size:22px;margin:0}
+.planner-login {max-width:480px}
+.planner-login p {color:#496077;margin:12px 0}
+.planner-login label,.planner-dialog label {display:block;font-size:13px;margin:12px 0;color:#344f67;font-weight:650}
+.planner-login input,.planner-dialog input,.planner-dialog select {display:block;width:100%;margin-top:6px}
+.planner-login .button {margin-top:4px}
+.planner-status {font-size:13px;min-height:1.25em;color:#365169}
+.planner-status:empty {display:none}
+.planner-meta,.planner-footer {font-size:12px;color:#4d657b}
+.planner-topline,.planner-date,.planner-card-heading,.planner-item,.planner-card-actions,.planner-footer {
+  display:flex;align-items:center;gap:10px
+}
+.planner-topline,.planner-card-heading,.planner-item,.planner-footer {justify-content:space-between}
+.planner-topline {margin:18px 0}
+.planner-date label {display:inline-flex;align-items:center;gap:8px;font-size:12px}
+.planner-date input {min-width:130px}
+.planner-nav {display:flex;flex-wrap:wrap;gap:6px;margin:16px 0}
+.planner-nav button {
+  background:white;color:#31536f;border:1px solid #d9e2ec;padding:9px 15px;border-radius:8px;cursor:pointer
+}
+.planner-nav button[aria-pressed=true] {background:#234768;color:white;border-color:#234768}
+.planner-active {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;background:#eef7f1;border-color:#cbdfd3}
+.planner-active small,.planner-description small {display:block;color:#4d657b;font-size:12px;margin-top:5px}
+.planner-clock {font-size:26px;font-variant-numeric:tabular-nums;font-weight:700}
+.planner-summary {display:flex;align-items:baseline;flex-wrap:wrap;gap:12px;margin:12px 0;color:#41607b}
+.planner-summary strong {font-size:26px;color:#214e43}
+.planner-summary span {font-size:13px}
+.planner-timeline {padding:11px 0 16px}
+.planner-timeline-labels {display:flex;justify-content:space-between;margin-left:45px;font-size:11px;color:#405c75}
+.planner-track-row {display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:7px;margin-top:8px;font-size:12px}
+.planner-track {background:#edf2f7;border-radius:4px;overflow:hidden}
+.planner-track canvas {display:block;width:100%;height:18px}
+.planner-columns {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.planner-lane,.planner-mini {border:1px solid #dee6ee;border-radius:10px;padding:16px;background:#f8fafc;min-width:0}
+.planner-lane h2 {font-size:16px}
+.planner-list,.planner-grid {margin-top:14px}
+.planner-list {display:grid;gap:8px}
+.planner-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:12px}
+.planner-item {border:1px solid #e0e6ed;border-radius:8px;padding:10px 12px;background:#fff;line-height:1.4}
+.planner-description {min-width:0;overflow-wrap:anywhere}
+.planner-item-actions {display:flex;gap:8px;flex-shrink:0}
+.planner-card-actions {flex-wrap:wrap;margin-top:10px}
+.planner-card-heading>.button {margin-left:auto}
+.planner-card-heading {flex-wrap:wrap}
+.planner-empty {color:#536b80;font-size:13px;margin:14px 0 4px}
+.planner-mini h3 {margin:0 0 10px;font-size:16px;overflow-wrap:anywhere}
+.planner-mini p,.planner-mini small {font-size:13px;color:#446178}
+.planner-mini progress {width:80%;margin-right:7px;accent-color:#28725d}
+.planner-habit-days {display:flex;gap:4px;flex-wrap:wrap}
+.planner-habit-days span {width:23px;height:23px;display:grid;place-items:center;border-radius:4px;background:#eaf0f6;color:#3b526b;font-size:11px}
+.planner-habit-days .checked {background:#296e5c;color:white}
+.planner-footer {margin:18px 0;padding:0;gap:8px;flex-wrap:wrap}
+.planner-footer button {font-size:12px}
+.planner-dialog {width:min(500px,94vw);padding:24px}
+.planner-dialog .planner-card-actions {justify-content:flex-end}
+.planner-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(max-width:690px){
+  .planner-head,.planner-card,.planner-active {padding:16px}
+  .planner-head {flex-wrap:wrap}
+  .planner-head h1 {font-size:29px}
+  .planner-columns,.planner-fields {grid-template-columns:1fr}
+  .planner-date {gap:6px;flex-wrap:wrap}
+  .planner-date label span,.planner-meta {display:none}
+  .planner-date .button,.planner-card-heading .button {padding:8px 10px}
+  .planner-card h2 {font-size:18px}
+  .planner-active {flex-wrap:wrap}
+}

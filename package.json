@@ -1,0 +1,17 @@
+{
+  "name": "policylens",
+  "version": "2026.11.21",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node local.mjs",
+    "test": "node verify-privacy.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.166.0"
+  }
+}

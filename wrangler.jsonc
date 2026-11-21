@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "policylens-campus",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-11-21",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./release",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "policylens-campus",
+      "database_id": "YOUR_D1_DATABASE_ID"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "15 18 * * *",
+      "5,35 * * * *"
+    ]
+  },
+  "observability": {
+    "enabled": false
+  }
+}
