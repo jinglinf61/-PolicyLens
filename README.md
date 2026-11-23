@@ -4,6 +4,8 @@
 
 [在线体验](https://policylens-campus.olicy-ens-web.workers.dev/) · [Windows x64 下载](https://github.com/jinglinf61/-PolicyLens/releases/latest)
 
+「搜索与更新」支持全网、已登记官网和西南大学官网，可进一步限定域名。必应暂时无法提供实时结果时，页面会显示据时收录的匹配资料，并保留原关键词和域名供用户在必应继续搜索。首页轮播自动切换，赛事照片随网站发布更新。
+
 ## 在本机运行
 
 - Windows 下载 ZIP 后完整解压，双击「启动据时.cmd」。程序会打开本机网页，校园成长助手和时间与习惯使用程序生成的「本机邀请凭证.txt」登录。Windows 包自带运行环境和本地模型。
@@ -15,7 +17,7 @@
 1. 运行 `npm install`，再运行 `npx wrangler login`。
 2. 用 `npx wrangler d1 create policylens-campus` 创建数据库，将数据库 ID 填入 `wrangler.jsonc`。
 3. 对 `schema.sql`、`site-schema.sql` 和 `planner-schema.sql` 分别执行 `npx wrangler d1 execute policylens-campus --remote --file <文件名>`。
-4. 运行 `node prepare-cloud.mjs storage-key | npx wrangler secret put STORAGE_KEY`，并妥善保存 `.local/cloud-storage-key.txt`。可选配置 `BRAVE_API_KEY`。
+4. 运行 `node prepare-cloud.mjs storage-key | npx wrangler secret put STORAGE_KEY`，并妥善保存 `.local/cloud-storage-key.txt`。校园成长助手可选配置 `BRAVE_API_KEY`。
 5. 运行 `npm run deploy`。用 `node prepare-cloud.mjs invites 5 <ISO-8601截止时间>` 生成体验凭证，再执行 `npx wrangler d1 execute policylens-campus --remote --file .local/cloud-invites.sql`。从 `.local/cloud-invites.txt` 逐一发放独立凭证。
 6. 运行 `npm test` 验证账号隔离、数据加密、跨会话同步和清除流程。
 

@@ -76,7 +76,7 @@ async function cloudApi(path,data) {
       delete sessionData.documents[data.id];return {ok:true};
     case '/api/discovery/watch': return saveWatch(data);
     case '/api/discovery/check': return checkWatch(data.id);
-    case '/api/discovery/web-search': return requestCloud('/api/site/search',{query:data.query,scope:data.scope});
+    case '/api/discovery/web-search': return requestCloud('/api/site/search',{query:data.query,scope:data.scope,domain:data.domain});
     case '/api/library/swu': {
       const cached=await catalog('swu');
       const response=await requestCloud('/api/site/swu',data);

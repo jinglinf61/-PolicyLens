@@ -27,9 +27,19 @@ document.querySelector('.site-header .brand').onclick=e=>{e.preventDefault();swi
   document.addEventListener('policylens-tab',schedule);
   motion.addEventListener('change',schedule);
   const go=(text,tab)=>{const b=make('button',text,'home-cta');b.type='button';b.onclick=()=>{switchTab(tab);window.scrollTo({top:0});};return b;};
+  function eventPhoto(event) {
+    const img=make('img');
+    img.alt=event.alt;
+    img.addEventListener('error',()=>{
+      img.alt='据时校园赛事';
+      img.src='/portal-cover.svg';
+    },{once:true});
+    img.src=event.image;
+    return img;
+  }
   function eventSlide(event){
     const slide=make('article',undefined,'home-slide home-photo-slide');
-    const img=make('img');img.src=event.image;img.alt=event.alt;img.className='home-hero-photo';img.fetchPriority='high';
+    const img=eventPhoto(event);img.className='home-hero-photo';img.fetchPriority='high';
     const copy=make('div',undefined,'home-slide-copy');
     copy.append(make('p','热门赛事 · 编辑精选','home-kicker'),make('h1',event.id==='challenge'?'把青春的创意，\n写进真实的世界。':'热爱上场，\n每一次全力以赴都闪光。'));
     copy.append(make('p',event.title,'home-slide-subtitle'));
@@ -48,7 +58,7 @@ document.querySelector('.site-header .brand').onclick=e=>{e.preventDefault();swi
   function eventCard(event){
     const card=make('article',undefined,'home-event-card');
     const visual=make('div',undefined,'home-event-visual');
-    const img=make('img');img.src=event.image;img.alt=event.alt;img.loading='lazy';img.width=700;img.height=470;
+    const img=eventPhoto(event);img.loading='lazy';img.width=700;img.height=470;
     const stamp=make('div',undefined,'home-date-stamp');stamp.append(make('strong',event.published.slice(8)),make('span',event.published.slice(0,7).replace('-','.')));
     visual.append(img,stamp);
     const copy=make('div',undefined,'home-event-copy');

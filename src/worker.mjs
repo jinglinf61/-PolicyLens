@@ -234,6 +234,8 @@ async function handle(request,env) {
   const body=post ? await readBody(request) : {};
   if(route.startsWith('/api/site/')) {
     try {
+      if(route==='/api/site/search'&&typeof body.query==='string'&&privacyFilter(body.query).includes('[已隐藏]'))
+        throw Error('联网搜索仅适合公开关键词，请移除个人信息和网址。');
       const result=await siteRoute(env,route.slice('/api/site/'.length),body,(bucket,max,expires)=>spend(env,bucket,max,expires));
       return json(result);
     } catch(error) {

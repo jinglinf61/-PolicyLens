@@ -1,13 +1,21 @@
-import {onlineSearch,searchScope} from './search.mjs';
+import {searchScope} from './search.mjs';
 import library from './library.json' with {type:'json'};
 
 const acceptedDomains = ['swu.edu.cn','lanqiao.cn','tiaozhanbei.net','mcm.edu.cn','icpc.global',
   ...library.schools.map(s=>s.domain).filter(Boolean)];
+const searchDomains = [...acceptedDomains,'huawei.com','huaweicloud.com'];
+const contestPages = [
+  {title:'华为 ICT 大赛 2025—2026 全球总决赛',url:'https://www.huawei.com/minisite/ict-competition-2025-2026-global/cn/index.html',unit:'Huawei ICT Competition'},
+  {title:'华为 ICT 学院',url:'https://e.huawei.com/cn/talent/ict-academy/',unit:'Huawei ICT Academy'},
+  {title:'蓝桥杯全国软件和信息技术专业人才大赛',url:'https://dasai.lanqiao.cn/'},
+  {title:'蓝桥杯个人赛',url:'https://dasai.lanqiao.cn/pages/v7/dasai/competition/individual_competition.html',unit:'报名 组别 赛项'},
+];
+const matchesDomain = (host,domain)=>host===domain||host.endsWith('.'+domain);
 const excluded = /名单|成绩.{0,12}公示|拟录取.{0,12}公示|获奖.{0,12}公示/;
 function verifiedLink(input,base) {
   try {
     const u=new URL(input,base);
-    if(u.protocol!=='https:'||u.port||u.username||u.password||!acceptedDomains.some(d=>u.hostname===d||u.hostname.endsWith('.'+d)))return null;
+    if(u.protocol!=='https:'||u.port||u.username||u.password||!acceptedDomains.some(d=>matchesDomain(u.hostname,d)))return null;
     u.hash='';
     return u;
   }catch{return null;}
@@ -113,6 +121,129 @@ async function monitor(env,group){
     events:records.slice(0,60).map(row=>({id:row.url,url:row.url,title:row.title,school:row.unit,kind:'new',time:row.first_seen,seen:false}))};
 }
 
+function searchOptions(body) {
+  const query=typeof body.query==='string'?body.query.trim():'';
+  if(query.length<2||body.query.length>300)throw Error('请填写2到300字的查询。');
+  const domain=typeof body.domain==='string'?body.domain.trim().toLowerCase():'';
+  if(domain.length>253||(domain&&!/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/.test(domain)))
+    throw Error('请填写域名，例如 dasai.lanqiao.cn。');
+  const scope=body.scope??'official';
+  if(!['all','official','campus'].includes(scope))throw Error('请选择搜索范围。');
+  if(scope==='campus'&&domain&&!matchesDomain(domain,'swu.edu.cn'))
+    throw Error('西南大学官网范围内，请填写 swu.edu.cn 或其子域名。');
+  if(scope==='official'&&domain&&!searchDomains.some(host=>matchesDomain(domain,host)))
+    throw Error('此域名尚未登记。切换到全网后仍可保留这个限定域名。');
+
+  let site=domain||(scope==='campus'?'swu.edu.cn':'');
+  if(scope==='official'&&!site){
+    const hint=searchScope(query);
+    if(/华为[\s-]*ICT/i.test(query))site='huawei.com';
+    else if(hint.school||hint.domain!=='swu.edu.cn'||query.includes('含弘杯'))site=hint.domain;
+  }
+  const terms=scope==='campus'&&!query.includes('西南大学')?'西南大学 '+query:query;
+  return {scope,domain,query,keywords:site?terms+' site:'+site:terms};
+}
+
+function rssField(item,name) {
+  const field=item.match(new RegExp('<'+name+'(?:\\s[^>]*)?>([\\s\\S]*?)</'+name+'>','i'))?.[1]||'';
+  return field.replace(/^\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*$/,'$1')
+    .replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(token,entity)=>{
+      if(entity[0]!=='#')return {amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:' '}[entity.toLowerCase()];
+      const code=entity[1].toLowerCase()==='x'?parseInt(entity.slice(2),16):Number(entity.slice(1));
+      return code<=0x10ffff?String.fromCodePoint(code):token;
+    }).trim();
+}
+
+function searchRow(row,{scope,domain},fromCatalog=false) {
+  let url;
+  try{url=new URL(row.url);}catch{return null;}
+  if(!['http:','https:'].includes(url.protocol)||url.port||url.username||url.password)return null;
+  const host=url.hostname;
+  const official=searchDomains.some(site=>matchesDomain(host,site));
+  if(domain&&!matchesDomain(host,domain))return null;
+  if(scope==='official'&&!official)return null;
+  if(scope==='campus'&&!matchesDomain(host,'swu.edu.cn'))return null;
+  const title=strip(row.title||'').slice(0,220);
+  if(!title||excluded.test(title)||/拟推荐人选|拟获奖人选/.test(title))return null;
+  url.hash='';
+  return {title,url:url.href,domain:host,
+    source_label:fromCatalog?'据时官网资料':official?'已登记官网':'网页来源',
+    snippet:strip(row.snippet||'').slice(0,350),preview_available:Boolean(verifiedLink(url))};
+}
+
+async function catalogSearch(env,options) {
+  const normalize=value=>value.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
+  const query=options.scope==='campus'&&options.query!=='西南大学'?
+    options.query.replace(/西南大学/g,' '):options.query;
+  const terms=query.split(/\s+/).map(normalize).filter(Boolean);
+  if(!terms.length)return [];
+  const [swu,latest]=await Promise.all([
+    metadata(env,'swu').catch(()=>[]),
+    DB(env,`SELECT title,url,unit,published,group_name FROM site_records
+      ORDER BY published DESC,first_seen DESC LIMIT 400`).all().then(r=>r.results).catch(()=>[]),
+  ]);
+  const matches=[];
+  for(const row of [...latest,...swu,...contestPages,...library.documents]){
+    const school=row.school||(row.group_name==='swu'||row.column?'西南大学':'');
+    const title=normalize(row.title);
+    const indexed=title+normalize([school,row.unit,...(row.topics||[])].filter(Boolean).join(' '));
+    if(!terms.every(term=>indexed.includes(term)))continue;
+    const date=row.published||row.date||'';
+    const result=searchRow({...row,snippet:[row.unit,date].filter(Boolean).join(' · ')},options,true);
+    if(result)matches.push({result,date,score:terms.filter(term=>title.includes(term)).length});
+  }
+  matches.sort((a,b)=>b.score-a.score||b.date.localeCompare(a.date));
+  const unique=new Map();
+  for(const {result} of matches){
+    if(!unique.has(result.url))unique.set(result.url,result);
+    if(unique.size===10)break;
+  }
+  return [...unique.values()];
+}
+
+async function searchFeed(endpoint,options) {
+  try{
+    const response=await fetch(endpoint,{redirect:'error',signal:AbortSignal.timeout(2800),
+      headers:{Accept:'application/rss+xml, application/xml, text/xml'}});
+    if(!response.ok||Number(response.headers.get('content-length'))>250000)return null;
+    const xml=await response.text();
+    if(!/<rss\b[\s\S]*?<\/rss>/i.test(xml))return null;
+    const results=new Map();
+    for(const [,item] of xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)){
+      const row=searchRow({title:rssField(item,'title'),url:rssField(item,'link'),snippet:rssField(item,'description')},options);
+      if(row)results.set(row.url,row);
+      if(results.size===10)break;
+    }
+    return [...results.values()];
+  }catch{
+    return null;
+  }
+}
+
+async function webSearch(env,options,allowed) {
+  const fallback=new URL('https://cn.bing.com/search');
+  fallback.searchParams.set('q',options.keywords);
+  const base={results:[],fallback_url:fallback.href};
+  if(!allowed)return {...base,status:'unavailable',notice:'站内联网检索额度暂时用完，可在浏览器继续搜索。'};
+  const feedRequest=domain=>{
+    const endpoint=new URL(fallback);
+    endpoint.hostname=domain;
+    endpoint.searchParams.set('format','rss');
+    return searchFeed(endpoint,options);
+  };
+  const [local,first,second]=await Promise.all([
+    catalogSearch(env,options),feedRequest('cn.bing.com'),feedRequest('www.bing.com'),
+  ]);
+  const live=first?.length?first:second||[];
+  const merged=new Map();
+  for(const row of [...live,...local])if(!merged.has(row.url))merged.set(row.url,row);
+  const results=[...merged.values()].slice(0,10);
+  if(live.length)return {...base,status:'ok',results,notice:'结果包含据时收录的官网资料或必应搜索摘要，详细信息请查看来源网页。'};
+  if(results.length)return {...base,status:'partial',results,notice:'已找到据时收录的官网资料。点击下方链接可继续搜索站外网页。'};
+  if(first||second)return {...base,status:'ok',notice:'当前范围内暂无匹配网页，可调整关键词或在浏览器继续搜索。'};
+  return {...base,status:'unavailable',notice:'据时资料库暂无匹配结果。可在浏览器继续搜索。'};
+}
+
 export async function siteRoute(env,route,body,spend) {
   if(route==='swu'||route==='admissions'){
     if(body.action==='run'){
@@ -122,19 +253,12 @@ export async function siteRoute(env,route,body,spend) {
     return monitor(env,route);
   }
   const hour=Math.floor(Date.now()/3600000);
-  if(!await spend('portal/fetch/'+hour,90,(hour+1)*3600000))throw Error('本时段联网检索额度已用完，请稍后再试。');
   if(route==='search'){
-    if(typeof body.query!=='string'||body.query.trim().length<2||body.query.length>300)throw Error('请填写2到300字的查询。');
-    const scope=searchScope(body.query);
-    if(body.scope==='campus'){
-      scope.domain='swu.edu.cn';
-      if(!scope.landing.includes('swu.edu.cn'))scope.landing='https://www.swu.edu.cn/tzgg.htm';
-    }
-    const online=await onlineSearch(scope,env.BRAVE_API_KEY,(url,options)=>fetch(url,options));
-    return {status:'ok',results:online.sources.map(row=>({...row,snippet:row.excerpt.slice(0,350),
-      source_label:'官网来源',domain:new URL(row.url).hostname})),notice:online.status,fallback_url:online.landing};
+    const options=searchOptions(body);
+    return webSearch(env,options,await spend('portal/search/'+hour,90,(hour+1)*3600000));
   }
   if(route!=='preview'&&route!=='column')throw Error('没有找到此功能。');
+  if(!await spend('portal/fetch/'+hour,90,(hour+1)*3600000))throw Error('本时段网页读取额度已用完，请稍后再试。');
   const url=verifiedLink(body.url);
   if(!url)throw Error('请填写已登记学校或赛事的 HTTPS 官网地址。');
   const html=await sourceHtml(url.href);

@@ -10,7 +10,47 @@ function renderDiscoveryState(state){
  const inbox=$('discovery-inbox');inbox.replaceChildren();if(!state.inbox.length)inbox.append(make('p','暂无采集记录。可联网搜索、粘贴网址或上传文件，无需先入库。','muted'));
  for(const item of [...state.inbox].reverse()){const card=make('article',undefined,'discovery-card');card.append(make('h3',item.title),make('p',`${item.status==='imported'?'已核对入库':'待核验'} · ${item.source_label} · ${item.fetched_at}`,'metadata'),make('p',item.previous_candidates.length?'检测到同一来源的不同快照，历史内容保留；尚未认定替代关系。':'首次采集的快照。','metadata'));const actions=make('div',undefined,'discovery-actions'),read=make('button','预览与范围核对','button secondary');read.type='button';read.onclick=async()=>{try{openCollected(await api('/api/discovery/document?id='+encodeURIComponent(item.id)));}catch(e){discoveryMessage('collect-status',e.message);}};const discard=make('button','移出采集列表','text-button');discard.type='button';discard.onclick=async()=>{try{await api('/api/discovery/discard',{id:item.id});await loadDiscovery();}catch(e){discoveryMessage('collect-status',e.message);}};actions.append(read,discard);card.append(actions);inbox.append(card);}
 }
-$('discover-search').onsubmit=async e=>{e.preventDefault();if(discoverySearching)return;discoverySearching=true;$('discover-run').disabled=true;const local=$('discover-mode').value==='local';discoveryMessage('discover-status',local?'正在检索全部已入库正文…':'正在联网检索，搜索摘要需要回到原文核对…');$('discover-results').replaceChildren();try{const r=await api('/api/discovery/'+(local?'local-search':'web-search'),{query:$('discover-query').value,scope:$('discover-scope').value,domain:$('discover-domain').value.trim()});const root=$('discover-results');root.append(make('p',r.notice,'eval-note'));for(const row of r.results){const card=make('article',undefined,'discovery-card');card.append(make('h3',row.title),safeLink(row.url,'打开来源网页 ↗'),make('p',local?(row.reviewed?'已入库，仍需核验适用范围':'元数据待确认'):row.source_label+' · '+row.domain,'metadata'),make('p',row.snippet,'search-snippet'));const action=make('button',local?'定位匹配原文':'读取原文并预览','button secondary');action.type='button';action.onclick=()=>local?openDocument(row.id,row.section_id):collectUrl(row.url,action);card.append(action);root.append(card);}if(r.fallback_url)root.append(safeLink(r.fallback_url,'在浏览器打开同一搜索 ↗'));discoveryMessage('discover-status',`${r.status==='unavailable'?'搜索服务当前不可用':'搜索完成'}，返回${r.results.length}条。${(r.warnings||[]).join('；')}${!r.results.length&&!local?' 可更换关键词、改为全网，或直接粘贴官方网址。':''}`);}catch(e){discoveryMessage('discover-status',e.message);}finally{discoverySearching=false;$('discover-run').disabled=false;}};
+$('discover-search').onsubmit=async e=>{
+  e.preventDefault();
+  if(discoverySearching)return;
+  discoverySearching=true;
+  $('discover-run').disabled=true;
+  const local=$('discover-mode').value==='local';
+  const scope=$('discover-scope').value;
+  const domain=$('discover-domain').value.trim();
+  const root=$('discover-results');
+  root.replaceChildren();
+  discoveryMessage('discover-status',local?'正在检索已入库正文…':'正在联网检索…');
+  try{
+    const result=await api('/api/discovery/'+(local?'local-search':'web-search'),{
+      query:$('discover-query').value,scope,domain,
+    });
+    if(result.notice)root.append(make('p',result.notice,'eval-note'));
+    for(const row of result.results){
+      const card=make('article',undefined,'discovery-card');
+      const source=local?(row.reviewed?'已入库，仍需核验适用范围':'元数据待确认'):row.source_label+' · '+row.domain;
+      card.append(make('h3',row.title),safeLink(row.url,'打开来源网页 ↗'),make('p',source,'metadata'));
+      if(row.snippet)card.append(make('p',row.snippet,'search-snippet'));
+      if(local||row.preview_available!==false){
+        const action=make('button',local?'定位匹配原文':'读取原文并预览','button secondary');
+        action.type='button';
+        action.onclick=()=>local?openDocument(row.id,row.section_id):collectUrl(row.url,action);
+        card.append(action);
+      }
+      root.append(card);
+    }
+    if(result.fallback_url)root.append(safeLink(result.fallback_url,'在必应继续搜索 ↗'));
+    let status=result.status==='unavailable'?'站内联网检索暂不可用。':`找到 ${result.results.length} 条结果。`;
+    if(!local&&result.status!=='unavailable'&&!result.results.length&&scope!=='all')status+=' 可切换到全网扩大搜索范围。';
+    if(result.warnings?.length)status+=' '+result.warnings.join('；');
+    discoveryMessage('discover-status',status);
+  }catch(error){
+    discoveryMessage('discover-status',error.message);
+  }finally{
+    discoverySearching=false;
+    $('discover-run').disabled=false;
+  }
+};
 $('discover-example').onclick=()=>{$('discover-query').value='蓝桥杯';$('discover-mode').value='web';$('discover-domain').value='';$('discover-search').requestSubmit();};
 async function collectUrl(url,button){if(button)button.disabled=true;discoveryMessage('collect-status','正在读取来源正文…');try{const d=await api('/api/discovery/preview',{url});openCollected(d);await loadDiscovery();discoveryMessage('collect-status','已读取并保存待核验快照，尚未加入核验证据。');}catch(e){discoveryMessage('collect-status',e.message);$('collect-status').scrollIntoView({block:'center'});}finally{if(button)button.disabled=false;}}
 $('collect-form').onsubmit=e=>{e.preventDefault();if(!$('collect-url').value)return discoveryMessage('collect-status','请填写具体网页或文件网址。');collectUrl($('collect-url').value,$('collect-run'));};
