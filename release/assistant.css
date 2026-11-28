@@ -34,9 +34,16 @@ details {margin-top:14px;font-size:14px;color:var(--muted)}
 summary {cursor:pointer}
 .answer,.question {white-space:pre-wrap;overflow-wrap:anywhere}
 .turn {margin-bottom:12px}
+#study-plan,#exercise-context {margin-bottom:14px}
+#conversation {margin-top:14px}
+#study-status:empty {display:none}
+#study-preview ul {padding-left:1.4em}
+.study-fields {display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px}
+#assistant-modes button[aria-pressed=true] {background:var(--blue);color:white}
 .question {font-weight:650}
 .source {padding:8px 10px;margin:6px 0; background:#f4f7fa;border-left:3px solid #bacbde;overflow-wrap:anywhere}
 a {color:#194a82}
 .danger,#status {color:#8d2b32}
 #status:empty,#model-note:empty {display:none}
 @media(max-width:760px){main{padding:20px 12px}.workspace,.welcome{grid-template-columns:1fr}.intro{padding:28px}.welcome .card{padding:20px}.privacy{width:100%}}
+@media(max-width:480px){.study-fields{grid-template-columns:1fr}}

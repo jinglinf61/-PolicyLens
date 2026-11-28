@@ -45,6 +45,32 @@ export function blankPlanner() {
   return {goals:[], habits:[], plans:[], records:[], checks:[], running:null};
 }
 
+function studyDraft(state, data, now) {
+  const topic=label(data.topic);
+  const exam=Date.parse(date(data.examDate)+'T00:00:00+08:00');
+  const minutes=data.minutes;
+  requireValue(Number.isInteger(minutes)&&minutes>=5&&minutes<=240, '每日复习时长请填写 5–240 分钟。');
+  requireValue(typeof data.startTime==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(data.startTime), '请选择每日开始时间。');
+  const today=new Date(now+8*60*MINUTE).toISOString().slice(0,10);
+  const startToday=Date.parse(today+'T'+data.startTime+':00+08:00');
+  const localMidnight=Date.parse(today+'T00:00:00+08:00');
+  requireValue(startToday+minutes*MINUTE<=localMidnight+DAY, '每日复习请在当天结束。');
+  const first=startToday>=now?startToday:startToday+DAY;
+  requireValue(first<exam, '考试前没有可安排的时段，请选择更早的开始时间或核对考试日期。');
+  const phases=['诊断薄弱点','复习核心概念','练习基础题','重做错题','混合练习','限时自测','复盘与重练'];
+  const slots=[];
+  const conflicts=[];
+  for(let i=0;i<phases.length&&first+i*DAY<exam;i++){
+    const start=first+i*DAY;
+    const end=start+minutes*MINUTE;
+    const phase=phases[i];
+    const item={title:topic.slice(0,48)+' · '+phase,start,end};
+    if(state.plans.some(row=>row.start<end&&row.end>start)) conflicts.push(item);
+    else slots.push(item);
+  }
+  return {slots,conflicts};
+}
+
 function writeItem(state, type, data, now) {
   const rows = state[type];
   const index = data.id ? rows.findIndex(row => row.id === data.id) : -1;
@@ -75,6 +101,17 @@ export function applyPlannerAction(state, data, now = Date.now()) {
       const type = Object.hasOwn(collection,data.kind) ? collection[data.kind] : '';
       requireValue(Boolean(type), '记录类型有误。');
       writeItem(state,type,data,now);
+      return state;
+    }
+    case 'save-study': {
+      requireValue(Array.isArray(data.slots)&&data.slots.length>0&&data.slots.length<=7, '请重新生成复习日程。');
+      for(const slot of data.slots){
+        requireValue(slot&&typeof slot==='object', '复习日程格式有误。');
+        const {start,end}=interval(slot);
+        requireValue(start>=now, '预览中的开始时间已过，请重新生成日程。',409);
+        requireValue(!state.plans.some(row=>row.start<end&&row.end>start), '复习时段与已保存的日程重叠，请重新预览。',409);
+        writeItem(state,'plans',{title:slot.title,start,end},now);
+      }
       return state;
     }
     case 'remove': {
@@ -132,6 +169,7 @@ export async function plannerRequest({db, user, post, body, open, encrypt}) {
   const state = saved ? await open(saved.ciphertext) : blankPlanner();
   const now = Date.now();
   if (!post) return {state,version,now,expires:user.expires};
+  if (body.action==='preview-study')return {...studyDraft(state,body,now),version};
   requireValue(Number.isInteger(body.version) && body.version === version,
     '另一页面或设备已更新记录，请确认已同步的内容后重试。',409);
   const next = applyPlannerAction(state,body,now);

@@ -23,18 +23,45 @@
 <section id="workspace" class="workspace" hidden>
   <div class="chat">
     <h1>校园成长助手</h1>
-    <p class="muted">政策问题可联网查官网，并查看资料库补充。</p>
-    <div class="examples" aria-label="示例问题">
+    <div id="assistant-modes" class="examples" role="group" aria-label="助手模式">
+      <button type="button" class="quiet" data-mode="policy" aria-pressed="true">政策与规划</button>
+      <button type="button" class="quiet" data-mode="coach" aria-pressed="false">备考教练</button>
+    </div>
+    <div id="coach-tools" hidden>
+      <form id="study-plan" class="card">
+        <h2>复习日程</h2>
+        <label>科目与薄弱点<input name="topic" required maxlength="48" placeholder="例如，C 语言指针"></label>
+        <div class="study-fields">
+          <label>考试日期<input name="examDate" type="date" required></label>
+          <label>每日分钟数<input name="minutes" type="number" min="5" max="240" value="40" required></label>
+          <label>每日开始时间（北京时间）<input name="startTime" type="time" value="19:30" required></label>
+        </div>
+        <div class="actions">
+          <button class="quiet" id="study-diagnose" type="button">用此主题出题</button>
+          <button type="submit">预览接下来 7 天</button>
+        </div>
+        <p id="study-status" class="muted" role="status"></p>
+        <div id="study-preview" hidden>
+          <ul id="study-slots"></ul>
+          <button id="study-save" type="button">确认加入「时间与习惯」</button>
+        </div>
+      </form>
+    </div>
+    <div id="policy-examples" class="examples" aria-label="示例问题">
       <button type="button" class="quiet" data-example="帮我查西南大学最新奖学金通知">查奖学金</button>
       <button type="button" class="quiet" data-example="帮我查蓝桥杯软件类报名通知">查蓝桥杯</button>
       <button type="button" class="quiet" data-example="接着上次的保研规划，帮我安排下一步">继续保研规划</button>
     </div>
-    <div id="conversation" aria-live="polite"></div>
     <form id="composer" class="card">
-      <label>你的问题<textarea name="question" placeholder="例如，帮我查四川大学计算机学院最新推免通知" required maxlength="700" rows="3"></textarea></label>
-      <div class="actions"><label class="check"><input name="search" type="checkbox">联网查官网</label><label class="check" title="开启后，当前问题和所需背景会发送给云端模型。请勿输入可识别个人身份的信息。"><input name="model" type="checkbox">用模型整理回答</label><button type="submit">发送</button></div>
+      <label><span id="composer-label">你的问题</span><textarea name="question" placeholder="例如，帮我查四川大学计算机学院最新推免通知" required maxlength="700" rows="3"></textarea></label>
+      <div id="exercise-context" hidden>
+        <details><summary>查看正在作答的题目</summary><p id="exercise-text" class="answer"></p></details>
+        <button class="quiet" id="exercise-cancel" type="button">取消作答</button>
+      </div>
+      <div class="actions"><label id="search-option" class="check"><input name="search" type="checkbox">联网查官网</label><label class="check" title="开启后，当前问题和所需背景会发送给云端模型。请勿输入可识别个人身份的信息。"><input name="model" type="checkbox"><span id="model-label">用模型整理回答</span></label><button type="submit" id="composer-send">发送</button></div>
       <p id="model-note" class="muted"></p>
     </form>
+    <div id="conversation" aria-live="polite"></div>
   </div>
   <aside class="card privacy">
     <h2>记忆与隐私</h2>
